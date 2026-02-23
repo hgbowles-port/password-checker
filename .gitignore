@@ -1,0 +1,15 @@
+# Data files
+data/rockyou.txt
+
+# Virtual environment
+venv/
+
+# Compiled Python
+__pycache__/
+*.pyc
+
+# Model file
+model.joblib
+
+# Breach database
+breach.db
