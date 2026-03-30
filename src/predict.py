@@ -4,10 +4,6 @@ import pandas as pd
 
 from features import extract_features
 
-"""
-load model
-"""
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "model.joblib")
 
@@ -16,27 +12,22 @@ if not os.path.exists(MODEL_PATH):
 
 model = joblib.load(MODEL_PATH)
 
-"""
-Prediction function
-"""
+LABEL_MAP = {0: "WEAK", 1: "MEDIUM", 2: "STRONG"}
 
 def predict_password_strength(password: str) -> dict:
     features = extract_features(password)
     df = pd.DataFrame([features])
 
     prediction = model.predict(df)[0]
-    probability = model.predict_proba(df)[0][prediction]
+    probabilities = model.predict_proba(df)[0]
+    confidence = round(probabilities[prediction] * 100, 2)
 
     return {
         "password": password,
-        "prediction": "STRONG" if prediction == 1 else "WEAK",
-        "confidence": round(probability * 100, 2),
+        "prediction": LABEL_MAP[prediction],
+        "confidence": confidence,
         "features": features
     }
-
-"""
-Quick Manual Test
-"""
 
 if __name__ == "__main__":
     test_pw = "P@ssw0rd123!"

@@ -1,13 +1,30 @@
 import math
 import string
 
-COMMON_WORDS = ["password", "admin", "login", "welcome", "qwerty"]
+COMMON_WORDS = ["password", "admin", "login", "welcome", "qwerty", "monkey", "dragon", "letmein"]
+
+LEET_MAP = {
+    "@": "a",
+    "0": "o",
+    "1": "i",
+    "3": "e",
+    "4": "a",
+    "5": "s",
+    "7": "t",
+    "$": "s",
+    "!": "i",
+}
+
+def deleet(password: str) -> str:
+    """
+    Reverse leet-speak substitutions to recover the base word
+    """
+    result = password.lower()
+    for symbol, letter in LEET_MAP.items():
+        result = result.replace(symbol, letter)
+    return result
 
 def calculate_entropy(password: str) -> float:
-    """
-    Estimate Shannon entropy of a given password
-    """
-
     if not password:
         return 0.0
     
@@ -25,11 +42,7 @@ def calculate_entropy(password: str) -> float:
     return round(entropy, 2)
 
 def character_stats(password: str) -> dict:
-    """
-    Return compositional stats of the password
-    """
-
-    return{
+    return {
         "length": len(password),
         "lowercase_count": sum(c.islower() for c in password),
         "uppercase_count": sum(c.isupper() for c in password),
@@ -38,9 +51,6 @@ def character_stats(password: str) -> dict:
     }
 
 def repeated_char_ratio(password: str) -> float:
-    """
-    Calculates the ratio of repeated characters in a given password
-    """
     if not password:
         return 0.0
     
@@ -51,10 +61,6 @@ def repeated_char_ratio(password: str) -> float:
     return repeats / len(password)
 
 def sequential_pattern_score(password: str) -> int:
-    """
-    checks for common sequences of characters in a password
-    """
-
     sequences = ["123", "abc", "qwerty", "password"]
     score = 0
     lower_pwd = password.lower()
@@ -65,23 +71,66 @@ def sequential_pattern_score(password: str) -> int:
     return score
 
 def contains_common_word(password: str) -> int:
-    """
-    Checks if password contains entries from COMMON_WORDS
-    """
-
     lower_pwd = password.lower()
     for word in COMMON_WORDS:
         if word in lower_pwd:
             return 1
     return 0
 
+def contains_leet_common_word(password: str) -> int:
+    """
+    Checks if the password contains a common word after reversing
+    leet-speak substitutions
+    """
+    deleeted = deleet(password)
+    for word in COMMON_WORDS:
+        if word in deleeted:
+            return 1
+    return 0
+
+def leet_substitution_count(password: str) -> int:
+    """
+    Counts how many leet substitution characters are present,
+    giving the model a sense of how much the password relies
+    on symbol swapping
+    """
+    return sum(1 for c in password if c in LEET_MAP)
+
+def complexity_ratio(password: str) -> float:
+    """
+    Ratio of character class variety to length.
+    A long password using only one character class
+    scores very low, penalizing passwords like
+    'thisisaverylongpassword'
+    """
+    classes_used = sum([
+        any(c.islower() for c in password),
+        any(c.isupper() for c in password),
+        any(c.isdigit() for c in password),
+        any(c in string.punctuation for c in password)
+    ])
+    return round(classes_used / 4, 2)
+
+def char_class_count(password: str) -> int:
+    """
+    Raw count of how many character classes are present (0-4).
+    Gives the model a direct signal of variety.
+    """
+    return sum([
+        any(c.islower() for c in password),
+        any(c.isupper() for c in password),
+        any(c.isdigit() for c in password),
+        any(c in string.punctuation for c in password)
+    ])
+
 def extract_features(password: str) -> dict:
-    """
-    Put it all together
-    """
     stats = character_stats(password)
     stats["entropy"] = calculate_entropy(password)
     stats["repeat_ratio"] = repeated_char_ratio(password)
     stats["sequence_score"] = sequential_pattern_score(password)
     stats["common_word"] = contains_common_word(password)
+    stats["leet_common_word"] = contains_leet_common_word(password)
+    stats["leet_substitution_count"] = leet_substitution_count(password)
+    stats["complexity_ratio"] = complexity_ratio(password)
+    stats["char_class_count"] = char_class_count(password)
     return stats
